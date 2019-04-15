@@ -1,6 +1,7 @@
 from collections import Counter
 import operator
 import time
+import copy
 
 def step1(filePathRead='D:/data/test/HDFS_2k.log'):                         #按照每行词的个数来进行划分 具有相同词数的line被分到一组
     partitionOne={}
@@ -54,23 +55,33 @@ def step3(cin):
 
 
 def step4(cin):                                                        #最后一步 提取日志模板
+    event_id=1
     pos=[]
     template=[]
     for i in cin:
+        event_id_str=str(event_id)
         pos=findPosOfVar(i)                                            #这个函数返回i中变量的位置
-        l = i[0]
-        print(i)
+        for k in i:                                                    #在每条日志后面加上事件ID
+            k.append(event_id_str)
+        l = copy.deepcopy(i[0])                                        #这里之所以要用深拷贝是因为如果采用浅拷贝 那么strcutLog中的这一条日志语句会因为下面的处理变成模版
         for j in pos:
             l[j]='*'                                                   #将变量用*代替
-        print(l)
         template .append(l)
+        event_id+=1
         l=[]
-    filePathWrite = 'D:/data/test_result/1.txt'
-    with open(filePathWrite,'w') as fw:
+    filePathTemplateWrite = 'D:/data/test_result/template.txt'
+    with open( filePathTemplateWrite,'w') as fw:
         for i in template:
             fw.write(" ".join(i))                                       #将list转为string
             fw.write("\n")
     fw.close()
+    filePathStructLogWrite = 'D:/data/test_result/struct_log.txt'       #写结构化日志
+    with open(filePathStructLogWrite, 'w') as log_wirte:
+        for i in cin:
+            for j in i:
+                log_wirte.write(" ".join(j))                             # 将list转为string
+                log_wirte.write("\n")
+    log_wirte.close()
 
 
 def uniqueCount(length,par):                                            #token position 以及对应的set of unique word 用于step2
