@@ -2,15 +2,15 @@ from collections import Counter
 import operator
 import time
 
-def step1(filePathRead='D:/data/HDFS/hadoop-hdfs-datanode-mesos-32.log'):                         #按照每行词的个数来进行划分 具有相同词数的line被分到一组
+def step1(filePathRead='D:/data/test/HDFS_2k.log'):                         #按照每行词的个数来进行划分 具有相同词数的line被分到一组
     partitionOne={}
     i=0
     with open(filePathRead, 'r') as fr:
         for line in fr:
             i+=1
             listLine=line.split()
-            if len(listLine[0])!=10 :
-                continue
+            #if len(listLine[0])!=10 or i%6!=0 :
+                #continue
             tokenCount=len(listLine)
             if not tokenCount in partitionOne:
                 partitionOne[tokenCount]=[listLine]
@@ -55,13 +55,22 @@ def step3(cin):
 
 def step4(cin):                                                        #最后一步 提取日志模板
     pos=[]
+    template=[]
     for i in cin:
         pos=findPosOfVar(i)                                            #这个函数返回i中变量的位置
         l = i[0]
+        print(i)
         for j in pos:
             l[j]='*'                                                   #将变量用*代替
         print(l)
+        template .append(l)
         l=[]
+    filePathWrite = 'D:/data/test_result/1.txt'
+    with open(filePathWrite,'w') as fw:
+        for i in template:
+            fw.write(" ".join(i))                                       #将list转为string
+            fw.write("\n")
+    fw.close()
 
 
 def uniqueCount(length,par):                                            #token position 以及对应的set of unique word 用于step2
