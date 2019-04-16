@@ -2,6 +2,7 @@ from collections import Counter
 import operator
 import time
 import copy
+import csv
 
 def step1(filePathRead='D:/data/test/HDFS_2k.log'):                         #按照每行词的个数来进行划分 具有相同词数的line被分到一组
     partitionOne={}
@@ -75,14 +76,19 @@ def step4(cin):                                                        #最后�
             fw.write(" ".join(i))                                       #将list转为string
             fw.write("\n")
     fw.close()
-    filePathStructLogWrite = 'D:/data/test_result/struct_log.txt'       #写结构化日志
-    with open(filePathStructLogWrite, 'w') as log_wirte:
-        for i in cin:
-            for j in i:
-                log_wirte.write(" ".join(j))                             # 将list转为string
-                log_wirte.write("\n")
-    log_wirte.close()
-
+    filePathStructLogWrite = 'D:/data/test_result/struct_log.csv'       #写结构化日志
+    csvFile=open(filePathStructLogWrite,'w',newline='')
+    writer=csv.writer(csvFile)
+    writer.writerow(['data','time','id','type','content','event_id'])
+    for i in cin:
+        length=len(i[0])
+        for j in i:
+            str_temp=(" ".join(j[4:length]))
+            temp=j[0:4]
+            temp.append(str_temp)
+            temp.append(j[-1])
+            writer.writerow(temp)
+            temp=[]
 
 def uniqueCount(length,par):                                            #token position 以及对应的set of unique word 用于step2
     l=set()
