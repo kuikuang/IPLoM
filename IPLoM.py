@@ -77,18 +77,18 @@ def step4(cin):                                                        #最后�
             fw.write("\n")
     fw.close()
     filePathStructLogWrite = 'D:/data/test_result/struct_log.csv'       #写结构化日志
-    csvFile=open(filePathStructLogWrite,'w',newline='')
+    csvFile=open(filePathStructLogWrite,'w',newline='')                 #这个newline可以避免出现空行
     writer=csv.writer(csvFile)
     writer.writerow(['data','time','id','type','content','event_id'])
     for i in cin:
         length=len(i[0])
         for j in i:
-            str_temp=(" ".join(j[4:length]))
+            str_temp=(" ".join(j[4:length]))                            #主要是为了之后用正则表达式找bik_id方便点 把
             temp=j[0:4]
             temp.append(str_temp)
             temp.append(j[-1])
             writer.writerow(temp)
-            temp=[]
+
 
 def uniqueCount(length,par):                                            #token position 以及对应的set of unique word 用于step2
     l=set()
