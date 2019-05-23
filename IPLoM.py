@@ -4,20 +4,25 @@ import time
 import copy
 import csv
 
-def step1(filePathRead='D:/data/test/HDFS_2k.log'):                         #按照每行词的个数来进行划分 具有相同词数的line被分到一组
+def step1(filePathRead):                         #按照每行词的个数来进行划分 具有相同词数的line被分到一组
     partitionOne={}
     i=0
     with open(filePathRead, 'r') as fr:
+        i=0
         for line in fr:
             i+=1
             listLine=line.split()
-            #if len(listLine[0])!=10 or i%6!=0 :
-                #continue
+            listLine.remove(listLine[0])
+            listLine.remove(listLine[0])
+            listLine.remove(listLine[0])
             tokenCount=len(listLine)
             if not tokenCount in partitionOne:
                 partitionOne[tokenCount]=[listLine]
             else:
                 partitionOne[tokenCount].append(listLine)
+            if i>=2000000:
+                break
+
     return partitionOne
 
 
@@ -55,7 +60,7 @@ def step3(cin):
    return partitionThree
 
 
-def step4(cin):                                                        #最后一步 提取日志模板
+def step4(cin, filePathTemplateWrite = 'D:/data/test_result/template.txt', filePathStructLogWrite = 'D:/data/test_result/struct_log.csv'    ):                                                        #最后一步 提取日志模板
     event_id=1
     pos=[]
     template=[]
@@ -70,25 +75,25 @@ def step4(cin):                                                        #最后�
         template .append(l)
         event_id+=1
         l=[]
-    filePathTemplateWrite = 'D:/data/test_result/template.txt'
+
     with open( filePathTemplateWrite,'w') as fw:
         for i in template:
             fw.write(" ".join(i))                                       #将list转为string
             fw.write("\n")
     fw.close()
-    filePathStructLogWrite = 'D:/data/test_result/struct_log.csv'       #写结构化日志
+                                                                        #写结构化日志
     csvFile=open(filePathStructLogWrite,'w',newline='')                 #这个newline可以避免出现空行
     writer=csv.writer(csvFile)
-    writer.writerow(['data','time','id','type','content','event_id'])
+    writer.writerow(['type','content','event_id'])
     for i in cin:
         length=len(i[0])
         for j in i:
-            str_temp=(" ".join(j[4:length]))                            #主要是为了之后用正则表达式找bik_id方便点 把
-            temp=j[0:4]
+            str_temp=(" ".join(j[1:length]))                            #主要是为了之后用正则表达式找bik_id方便点 把
+            temp=j[0:1]
             temp.append(str_temp)
             temp.append(j[-1])
             writer.writerow(temp)
-
+    csvFile.close()
 
 def uniqueCount(length,par):                                            #token position 以及对应的set of unique word 用于step2
     l=set()
@@ -173,7 +178,7 @@ def getCount1(list):                                                         #�
 
 
 def getMappingPosition(l):                                                     #不是按照基数排列，是按照基数出现的次数进行排列。选取出现频率最高的作为mapping pos.因为就直觉上来说如果两个集合是满射，他们的元素个数肯定是相同的
-    print("getMappingPosition")
+
 
     tokenCount=len(l[0])
     cardinality={}
@@ -214,7 +219,7 @@ def getMappingPosition(l):                                                     #
 
 
 def processMap(p1,p2,par,partitionThree):
-    print("processMap")
+
     s1,s2=setOfWordByPos(p1,p2,par)
     S1=list(s1)
     S2=list(s2)
@@ -222,7 +227,6 @@ def processMap(p1,p2,par,partitionThree):
     lOfS2=countOfS(S2,par,p2)                                                   #这个函数用来计算s2中的每个词在par中出现的行数
     tokenValues = []                                                            #tokenValues代表我们选的那一侧的token值 比如说我们选了1-M的Mside，那么tokenValues就为M所代表的M个token
     for i in range(len(S1)):
-        print(len(S1))
         type,distance,word,listOfMside=determineMappingType(i,lOfS1,lOfS2)      #这里我们规定 0是1-1型，1是1-M型，2是M-1型，3是M-M型，word代表1-M或者M-1中的1在set S1或者set S2中的位置，同理，listOfMside代表M在set S1或者S2中的位置
         if type==0:
             splitPos=p1
@@ -248,10 +252,16 @@ def processMap(p1,p2,par,partitionThree):
         else:
             continue
 
-        L1,L2=parBySplitPos(par,splitPos,tokenValues)                           #L1代表根据splitPos分出来的partition，L2代表partition剩下的,s1[i]代表token值
+        L1,L2,judge=parBySplitPos(par,splitPos,tokenValues)                           #L1代表根据splitPos分出来的partition，L2代表partition剩下的,s1[i]代表token值
         tokenValues=[]
+
         if L1:
-            partitionThree.append(L1)
+            if judge==True:
+                partitionThree.append(L1)
+            else:
+                for i in L1:
+
+                    partitionThree.append(i)
         if not L2:                                                              #该par已经为空 也就是说整个partiton已经划分完毕
             return L2
         par=L2
@@ -259,7 +269,6 @@ def processMap(p1,p2,par,partitionThree):
 
 
 def setOfWordByPos(p1,p2,par):
-    print("setOfWordByPos")
     s1=set()
     s2=set()
     str1=''
@@ -287,7 +296,6 @@ def determineMappingType(index,s1,s2):
 
 
 def countOfS(s,par,p):
-    print("countOfS")
     l=[]
     temp=[]
     length=len(par)
@@ -365,20 +373,33 @@ def getRankPosition(distance,type):
     return splitRank
 
 def parBySplitPos(par,splitPos,tokenValues):                                       #根据我们确定的SplitPos以及对应的token来对par进行划分
-    print("parBySplitPos")
     L1=[]
     L2=[]
-    for i in par:
-        judge=True
-        for j in tokenValues:
-            if i[splitPos]==j:
-                L1.append(i)
-                judge=False
-                break
-        if judge:
-            L2.append(i)
-        print('for in parBySplitPos')
-    return L1,L2
+    L=[]
+
+    if len(tokenValues)==1:
+        for i in par:
+            judge=True
+            for j in tokenValues:
+                if i[splitPos]==j:
+                    L1.append(i)
+                    judge=False
+                    break
+            if judge:
+                 L2.append(i)
+        return L1, L2,True
+    else:
+        for k in tokenValues:
+            for i in par:
+                if i[splitPos]==k:
+                    L.append(i)
+                    par.remove(i)
+            L1.append(L)
+            L=[]
+        return L1,par,False
+
+
+
 
 def findPosOfVar(par):                                                             #找到变量的位置
     length=len(par[0])
@@ -394,10 +415,13 @@ def findPosOfVar(par):                                                          
 
 def testFunc():
     start=time.time()
-    pOne=step1()
+    filePath='D:/data/HDFS/HDFS.log'
+    pOne=step1(filePath)
     pTwo=step2(pOne)
     pThree=step3(pTwo)
-    step4(pThree)
+    filePath_template='D:/data/test_result/template.txt'
+    filePath_structlog='D:/data/test_result/struct_log.csv'
+    step4(pThree, filePath_template,filePath_structlog)
     end=time.time()
     print(end-start)
 testFunc()
